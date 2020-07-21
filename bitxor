@@ -1,0 +1,40 @@
+/*
+0<=a,b,x<2^31
+已知x，为了让a^b^x取得最大值，求｜a-b|最小的方案数。
+
+显然可知当0<=a,b,x<2^31时
+a^b^x=(2^31-1)
+a^b=(2^31-1)^x
+由于1^0=1,1^1=0,0^0=0
+所以(2^31-1)^x中的第一个1属于a(b)，其余的1属于b(a)。
+所以方案数为2^(0的个数)*2
+需要考虑特殊情况当(2^31-1)^x=0
+方案数为2^31
+*/
+#include<bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+const ll inf = (1<<31) - 1;
+ll getZero(ll x){
+  ll y = inf;
+  ll cnt = 0;
+  while (y){
+    y>>=1;
+    if (!(x&1)){
+      cnt++;
+    }
+    x>>=1;
+  }
+}
+void sol(){
+  ll x;cin>>x;
+  x = x^inf;
+  ll y = getZero(x);
+  cout<<min((ll)pow(2,y+1),inf+1)<<endl;
+}
+int main(){
+  int t;cin>>t;
+  for (int i=1;i<=t;i++){
+    sol();
+  }
+}
