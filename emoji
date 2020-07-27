@@ -1,0 +1,246 @@
+/*
+check emoji depending on unicode.
+emoji.txt can download from official website.
+*/
+//
+// Created by nbfynbfy on 2020/7/21.
+//
+#include <iostream>
+#include <string.h>
+#include <fstream>
+#include <vector>
+#include <math.h>
+struct UnicodeWord {
+    int first, second;
+    UnicodeWord(int f, int s) {
+        first = f;
+        second = s;
+    }
+
+    UnicodeWord(int f) {
+        first = f;
+        second = -1;
+    }
+
+    bool operator< (UnicodeWord other) {
+        return (first != other.first) ? (first < other.first) : (second < other.second);
+    }
+
+    bool operator<= (UnicodeWord other) {
+        return (first != other.first) ? (first <= other.first) : (second <= other.second);
+    }
+
+    bool operator== (UnicodeWord other) {
+        return (first == other.first) & (second == other.second);
+    }
+};
+
+using namespace std;
+
+vector <UnicodeWord> vec;
+
+inline bool Is16Char(char c) {
+    return (( c <= '9' && c >= '0') || (c <= 'F' && c >='A')) ? true : false;
+}
+
+inline bool Is10Char(char c) {
+    return ( c <= '9' && c >= '0') ? true:false;
+}
+
+string FindNext(string str, int &index){
+    if (!Is16Char(str[index])) {
+        return string("");
+    }
+    string ans = "";
+    while (index < str.size()) {
+        if (!Is16Char(str[index])) {
+            break;
+        }
+        ans.push_back(str[index++]);
+    }
+    index++;
+    return ans;
+}
+
+int Get16Number(string str) {
+    if (str.size() == 0) {
+        return -1;
+    }
+    int k = 1,ans = 0;
+    for (int i=str.size()-1;i>=0;i--){
+        int tmp;
+        if (Is10Char(str[i])) {
+            tmp = str[i] - '0';
+        } else {
+            tmp = str[i] - 'A' + 10;
+        }
+        ans += tmp * k;
+        k <<= 4;
+    }
+    return ans;
+}
+
+void Init(){
+    ifstream infile("/Users/nbfynbfy/CLionProjects/untitled/emoji.txt", ios::in);
+    string str;
+    vec.clear();
+    if (!infile.is_open()) {
+        cout<<"file open filed"<<endl;
+        return;
+    }
+    while (getline(infile, str)) {
+        int index = 0;
+        if (Is16Char(str[index])) {
+            int word_first = Get16Number(FindNext(str, index));
+            int word_second = Get16Number(FindNext(str, index));
+            UnicodeWord* word = new UnicodeWord(word_first, word_second);
+//            if (vec.size() == 371) {
+//                cout<<word_first<<" "<<word_second<<endl;
+//                cout<<vec[370].first.first<<" "<<vec[370].first.second<<" "<<vec[370].last.first<<" "<<vec[370].last.second<<endl;
+//            }
+            vec.push_back(*word);
+            index++;
+//            cout<<index;
+        }
+
+    }
+    infile.close();
+}
+
+vector<string> SplidWord(string str) {
+    int index = 0;
+    vector<string>ans;
+    ans.clear();
+    while (index < str.size()) {
+        int tmp = str[index], size = 0;
+        string t_str = "";
+        while (tmp & 0x80) {
+            tmp<<=1;
+            size++;
+        }
+        if (size == 0){
+            size = 1;
+        }
+        for (int i = 0;i < size;i++) {
+            t_str.push_back(str[index++]);
+        }
+        ans.push_back(t_str);
+    }
+    return ans;
+}
+
+int WordToInt(string str) {
+    int k = 1, ans = 0;
+    for (int i = str.size()-1;i>0;i--) {
+        ans += (str[i] & 63) * k;
+        k <<= 6;
+    }
+    int tmp = (str.size() == 1)?7:(7-str.size());
+    ans +=  (str[0] & ((int)pow(2,tmp)-1))* k;
+    return ans;
+}
+
+bool CheckEmoji(string str1, string str2) {
+    int tmp1 = WordToInt(str1), tmp2 = WordToInt(str2);
+    int l = 0, r = vec.size() - 1;
+    UnicodeWord tmp(tmp1, tmp2);
+    while ( l < r ) {
+        int m = (l + r) / 2;
+        if (vec[m] == tmp) {
+            return true;
+        }
+        if (tmp<vec[m].first) {
+            r = m-1;
+        } else {
+            l = m+1;
+        }
+    }
+    if (vec[l] == tmp) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool CheckEmoji(string str) {
+    int tmp1 = WordToInt(str);
+    int l = 0, r = vec.size() - 1;
+    UnicodeWord tmp(tmp1);
+    while ( l < r ) {
+        int m = (l + r) / 2;
+        if (vec[m] == tmp) {
+            return true;
+        }
+        if (tmp<vec[m].first) {
+            r = m-1;
+        } else {
+            l = m+1;
+        }
+    }
+    if (vec[l] == tmp) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void PrintUnicodeWord(UnicodeWord x){
+    cout<<"std::pair<int,int>("<<x.first<<", "<<x.second<<")";
+}
+
+int main() {
+    Init();
+    cout<<"{";
+    PrintUnicodeWord(vec[0]);
+    for (int i=1;i<vec.size();i++) {
+        cout<<", ";
+        PrintUnicodeWord(vec[i]);
+    }
+    cout<<"}"<<endl;
+    cout<<vec.size();
+    string str;
+    cin >> str;
+    vector<string>wordlist = SplidWord(str);
+    vector<bool>ans;
+    vector<int>first;
+    vector<int>last;
+    ans.clear();
+    first.clear();
+    last.clear();
+    int index = 0;
+    while (index < wordlist.size()) {
+        if (index ==wordlist.size()-1) {
+            first.push_back(index);
+            last.push_back(index);
+            if (CheckEmoji(wordlist[index])) {
+                ans.push_back(true);
+            } else {
+                ans.push_back(false);
+            }
+            index++;
+        } else {
+            first.push_back(index);
+            if (CheckEmoji(wordlist[index])) {
+                ans.push_back(true);
+                last.push_back(index++);
+            } else if (CheckEmoji(wordlist[index], wordlist[index+1])) {
+                ans.push_back(true);
+                last.push_back(++index);
+                index++;
+            } else {
+                ans.push_back(false);
+                last.push_back(index++);
+            }
+        }
+    }
+    for (int i = 0; i < ans.size(); i++) {
+        cout<<first[i]<<"-"<<last[i]<<":"<<(ans[i]?"true":"false")<<endl;
+    }
+    vector<int>vec;
+    vec.clear();
+    vec.push_back(1);
+    vec.push_back(2);
+    auto iter = vec.begin();
+    vec.erase(iter);
+    cout<<(*iter)<<endl;
+}
